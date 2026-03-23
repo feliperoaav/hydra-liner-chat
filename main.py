@@ -24,7 +24,7 @@ if not OPENAI_API_KEY:
 
 client = OpenAI(
     api_key=OPENAI_API_KEY,
-    base_url="https://api.openai.com/v1"
+    base_url="https://api.manus.im/api/llm-proxy/v1/"
 )
 
 SYSTEM_PROMPT = """Eres el asistente virtual de Hydra Liner, una empresa chilena especializada en rehabilitación de tuberías sin excavación (tecnología Trenchless CIPP). Tu nombre es "Hydra" y representas a la empresa de manera profesional, amigable y técnica.
