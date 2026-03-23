@@ -22,7 +22,10 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     logger.error("OPENAI_API_KEY environment variable is not set!")
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(
+    api_key=OPENAI_API_KEY,
+    base_url="https://api.openai.com/v1"
+)
 
 SYSTEM_PROMPT = """Eres el asistente virtual de Hydra Liner, una empresa chilena especializada en rehabilitación de tuberías sin excavación (tecnología Trenchless CIPP). Tu nombre es "Hydra" y representas a la empresa de manera profesional, amigable y técnica.
 
