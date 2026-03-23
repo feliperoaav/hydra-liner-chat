@@ -1,8 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
 import os
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -14,7 +18,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    logger.error("OPENAI_API_KEY environment variable is not set!")
+
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 SYSTEM_PROMPT = """Eres el asistente virtual de Hydra Liner, una empresa chilena especializada en rehabilitación de tuberías sin excavación (tecnología Trenchless CIPP). Tu nombre es "Hydra" y representas a la empresa de manera profesional, amigable y técnica.
 
@@ -72,20 +80,35 @@ class ChatRequest(BaseModel):
 
 @app.post("/chat")
 async def chat(request: ChatRequest):
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    for msg in request.messages:
-        messages.append({"role": msg.role, "content": msg.content})
+    try:
+        if not OPENAI_API_KEY:
+            raise HTTPException(status_code=500, detail="API key not configured")
+        
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        for msg in request.messages:
+            messages.append({"role": msg.role, "content": msg.content})
 
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=messages,
-        max_tokens=500,
-        temperature=0.7,
-    )
+        logger.info(f"Processing chat request with {len(request.messages)} messages")
+        
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=messages,
+            max_tokens=500,
+            temperature=0.7,
+        )
 
-    return {"reply": response.choices[0].message.content}
+        reply = response.choices[0].message.content
+        logger.info("Chat response generated successfully")
+        return {"reply": reply}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in chat endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    api_key_set = bool(OPENAI_API_KEY)
+    return {"status": "ok", "api_key_configured": api_key_set}
